@@ -43,14 +43,14 @@ ENDFUNCTION
 
 FUNCTION AddItem(item : STRING, quan : INTEGER) RETURNS INTEGER
     IF cur_sz = INV_SIZE THEN
-        RETURN 0
+        RETURN 1
     ENDIF
     DECLARE i : INTEGER
     cur_sz ← cur_sz + 1
     DECLARE valid : BOOLEAN
     valid ← FALSE
     i ← 1
-    WHILE valid = FALSE AND i <= 100
+    WHILE valid = FALSE AND i <= INV_SIZE
         IF inventory[i].QUANTITY = -1 THEN
             valid ← TRUE
             inventory[i].NAME ← item
@@ -65,23 +65,23 @@ FUNCTION AddItem(item : STRING, quan : INTEGER) RETURNS INTEGER
         i ← i + 1
     ENDWHILE
     IF valid = FALSE THEN
-        RETURN 0
+        RETURN 2
     ELSE 
-        RETURN 1
+        RETURN 0
     ENDIF
-    RETURN 0
 ENDFUNCTION
 
-FUNCTION RemoveItem(item : STRING, quan : INTEGER) RETURNS INTEGER
+FUNCTION RemoveItem(item : STRING) RETURNS INTEGER
     DECLARE valid : BOOLEAN
     valid ← FALSE
     DECLARE i : INTEGER
     i ← 1
     IF cur_sz = 0 THEN
-        RETURN 0
+        RETURN 1
     ENDIF
     WHILE i <= 100 AND valid = FALSE
         IF inventory[i].NAME = item THEN
+            cur_sz ← cur_sz - 1
             inventory[i].NAME ← "NaN"
             inventory[i].QUANTITY ← -1
             in_stock[i].NAME ← "NaN"
@@ -91,11 +91,10 @@ FUNCTION RemoveItem(item : STRING, quan : INTEGER) RETURNS INTEGER
         i ← i + 1
     ENDWHILE
     IF valid = FALSE THEN
-        RETURN 0
-    ELSE
         RETURN 1
+    ELSE
+        RETURN 0
     ENDIF
-    RETURN 0
 ENDFUNCTION
 
 PROCEDURE SalesReport()
@@ -128,31 +127,96 @@ PROCEDURE InitialiseInventory()
     NEXT i
 ENDPROCEDURE
 
-PROCEDURE main()
-    CALL InitialiseInventory()
-    
-    //sale test
-    DECLARE qnt,retrn:INTEGER
-    DECLARE item:STRING
-    item←"Item1"
-    qnt←20
-    retrn←Sale(item,qnt)
-    IF retrn = 0 THEN
-        OUTPUT "Successfull"
-    ENDIF
-    IF retrn = 1 THEN
-        OUTPUT "Not enough in stock of"&item
-    ENDIF
-    IF retrn = 2 THEN
-        OUTPUT item & "is not present in stock"
-    ENDIF
-    
-    //SalesReport test
-    CALL SalesReport()
-
-    //InventoryReport test
-    CALL InventoryReport()
-
+PROCEDURE WriteToFile(Name : STRING)
+    OPENFILE Name FOR WRITE
+    WRITEFILE Name, "name,quantity,in_stock"
+    FOR index←1 TO INV_SIZE
+        WRITEFILE Name, inventory[index].NAME & "," & NUM_TO_STR(inventory[index].QUANTITY) & "," & in_stock[index].STCK
+    NEXT index
+    //iterate through an array and write in csv format
+    CLOSEFILE Name
 ENDPROCEDURE
 
+PROCEDURE Handler(State : INTEGER)
+    DECLARE item: STRING
+    DECLARE quantity,res: INTEGER
+    IF State <= 3 THEN
+        OUTPUT "Item: "
+        INPUT item
+        IF State <= 2 THEN
+            OUTPUT "Quantity: "
+            INPUT quantity
+
+            IF State = 1 THEN
+                res←Sale(item,quantity)
+                IF res = 0 THEN
+                    OUTPUT "SUCCESSFUL"
+                ENDIF
+                IF res = 1 THEN
+                    OUTPUT "The stock has less quantity than needed"
+                ENDIF
+                IF res = 2 THEN
+                    OUTPUT "The item not found in the stock"
+                ENDIF
+            ENDIF
+
+
+            IF State = 2 THEN
+                res←AddItem(item, quantity)
+                IF res=0 THEN
+                    OUTPUT "SUCCESSFUL"
+                ENDIF
+                IF res = 1 THEN
+                    OUTPUT "The array is full"
+                ENDIF
+                IF res = 2 THEN
+                    OUTPUT "No undeclared items"
+                ENDIF
+            ENDIF
+        ELSE
+            res←RemoveItem(item)
+            IF res = 0 THEN
+                OUTPUT "SUCCESSFUL"
+            ENDIF
+            IF res = 1 THEN
+                OUTPUT "The item isn't in the array"
+            ENDIF
+        ENDIF
+    ELSE
+        IF State = 4 THEN
+            CALL SalesReport()
+        ENDIF
+        IF State = 5 THEN
+            CALL InventoryReport()
+        ENDIF
+        IF State = 6 THEN
+            DECLARE name : STRING
+            OUTPUT "Name of file:"
+            INPUT name
+            CALL WriteToFile(name)
+        ENDIF
+    ENDIF
+ENDPROCEDURE
+
+PROCEDURE menu()
+    DECLARE inp: INTEGER
+    OUTPUT "Choose one of the following:\n1:Sale\n2:AddItem\n3:RemoveItem\n4:Salesreport\n5:InventoryReport\n6:Writetofile"
+    INPUT inp
+    CASE OF inp
+        1 : CALL Handler(1)
+        2 : CALL Handler(2)
+        3 : CALL Handler(3)
+        4 : CALL Handler(4)
+        5 : CALL Handler(5)
+        6 : CALL Handler(6)
+        OTHERWISE: OUTPUT "Error" CALL menu()
+    ENDCASE
+ENDPROCEDURE
+
+PROCEDURE main()
+    CALL menu()
+    CALL main()
+ENDPROCEDURE
+
+CALL InitialiseInventory()
 CALL main()
