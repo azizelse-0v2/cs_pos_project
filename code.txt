@@ -1,11 +1,10 @@
 CONSTANT INV_SIZE = 100
 
-DECLARE i,index:INTEGER
+DECLARE i,index,sales_index:INTEGER
 DECLARE inventory : ARRAY[1:INV_SIZE] OF inv
-DECLARE in_stock  : ARRAY[1:INV_SIZE] OF stock
-
-DECLARE cur_sz : INTEGER
-cur_sz = INV_SIZE
+DECLARE in_stock  : ARRAY[1:INV_SIZE] OF stock//for 2d array
+DECLARE sales     : ARRAY[1:INV_SIZE] OF inv
+sales_index←1
 
 TYPE inv
     DECLARE NAME: STRING
@@ -26,6 +25,9 @@ FUNCTION Sale(BYVAL Item : STRING, BYREF Quantity: INTEGER) RETURNS INTEGER
             Flag←TRUE
             IF inventory[index].QUANTITY >= Quantity THEN
                 inventory[index].QUANTITY←inventory[index].QUANTITY-Quantity
+                sales[sales_index].NAME ← Item
+                sales[sales_index].QUANTITY ← Quantity
+                sales_index←sales_index+1
                 RETURN 0
             ELSE
                 RETURN 1
@@ -38,71 +40,34 @@ FUNCTION Sale(BYVAL Item : STRING, BYREF Quantity: INTEGER) RETURNS INTEGER
 
 ENDFUNCTION
 
-FUNCTION AddItem(item : STRING, quan : INTEGER) RETURNS INTEGER
-    IF cur_sz = INV_SIZE THEN
-        RETURN 0
-    ENDIF
-    DECLARE i : INTEGER
-    cur_sz ← cur_sz + 1
-    DECLARE valid : BOOLEAN
-    valid = FALSE
-    i ← 1
-    WHILE valid == FALSE AND i <= 100
-        IF inventory[i].QUANTITY == -1 THEN
-            valid ← TRUE
-            inventory[i].NAME ← item
-            inventory[i].QUANTITY ← quan
-            in_stock[i].NAME ← item
-            IF quan > 0 THEN
-                in_stock[i].STCK ← FALSE
-            ELSE
-                in_stock[i].STCK ← TRUE
-            ENDIF
-        ENDIF
-        i ← i + 1
-    ENDWHILE
-    IF valid = FALSE THEN
-        RETURN 0
-    ELSE 
-        RETURN 1
-    ENDIF
+FUNCTION AddItem() RETURNS INTEGER
+    RETURN 0
 ENDFUNCTION
-FUNCTION RemoveItem(item : STRING) RETURNS INTEGER
-    DECLARE valid : BOOLEAN
-    valid ← FALSE
-    DECLARE i : INTEGER
-    i ← 1
-    IF cur_sz = 0 THEN
-        RETURN 0
-    ENDIF
-    WHILE i <= 100 AND valid = FALSE
-        IF inventory[i].NAME = item THEN
-            inventory[i].NAME = "NaN"
-            inventory[i].QUANTITY = -1
-            in_stock[i].NAME = "NaN"
-            in_stock[i].STCK = FALSE
-            valid = TRUE
-        ENDIF
-        i ← i + 1
-    ENDWHILE
-    IF valid = FALSE THEN
-        RETURN 0
-    ELSE
-        RETURN 1
-    ENDIF
-ENDFUNCTION
-PROCEDURE SalesReport()
 
+FUNCTION RemoveItem() RETURNS INTEGER
+    RETURN 0
+ENDFUNCTION
+
+PROCEDURE SalesReport()
+    FOR index←1 TO sales_index-1
+        OUTPUT NUM_TO_STR(index) & " Sold " & NUM_TO_STR(sales[index].QUANTITY) & " many of " & sales[index].NAME
+    NEXT index
 ENDPROCEDURE
 
 PROCEDURE InventoryReport()
+    FOR index←1 TO INV_SIZE
+        CASE OF inventory[index].NAME
+            "NaN": OUTPUT ""
+            OTHERWISE: OUTPUT "There are " & NUM_TO_STR(inventory[index].QUANTITY) & " of " & inventory[index].NAME
+        ENDCASE
+    NEXT index
 ENDPROCEDURE
 
 //vibecoded function
 PROCEDURE InitialiseInventory()
     DECLARE i : INTEGER
     FOR i ← 1 TO INV_SIZE
-        inventory[i].NAME ← "Item" & i
+        inventory[i].NAME ← "Item" & NUM_TO_STR(i)
         inventory[i].QUANTITY ← INT(RAND(500))
         in_stock[i].NAME ← inventory[i].NAME
         IF inventory[i].QUANTITY > 0 THEN
@@ -115,11 +80,12 @@ ENDPROCEDURE
 
 PROCEDURE main()
     CALL InitialiseInventory()
-
+    
+    //sale test
     DECLARE qnt,retrn:INTEGER
     DECLARE item:STRING
     item←"Item1"
-    qnt←10
+    qnt←20
     retrn←Sale(item,qnt)
     IF retrn = 0 THEN
         OUTPUT "Successfull"
@@ -131,6 +97,12 @@ PROCEDURE main()
         OUTPUT item & "is not present in stock"
     ENDIF
     
+    //SalesReport test
+    CALL SalesReport()
+
+    //InventoryReport test
+    CALL InventoryReport()
+
 ENDPROCEDURE
 
 CALL main()
