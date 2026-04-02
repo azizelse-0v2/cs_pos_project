@@ -50,7 +50,7 @@ ENDFUNCTION
 
 PROCEDURE SalesReport()
     FOR index←1 TO sales_index-1
-        OUTPUT NUM_TO_STR(index) & " Sold " & NUM_TO_STR(sales[index].QUANTITY) & " many of " & sales[index].NAME
+        OUTPUT NUM_TO_STR(index) & " Sold  " & NUM_TO_STR(sales[index].QUANTITY) & " many of " & sales[index].NAME
     NEXT index
 ENDPROCEDURE
 
