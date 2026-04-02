@@ -1,0 +1,108 @@
+CONSTANT INV_SIZE = 100
+
+DECLARE i,index,sales_index:INTEGER
+DECLARE inventory : ARRAY[1:INV_SIZE] OF inv
+DECLARE in_stock  : ARRAY[1:INV_SIZE] OF stock//for 2d array
+DECLARE sales     : ARRAY[1:INV_SIZE] OF inv
+sales_index←1
+
+TYPE inv
+    DECLARE NAME: STRING
+    DECLARE QUANTITY: INTEGER
+ENDTYPE
+
+TYPE stock
+    DECLARE NAME: STRING
+    DECLARE STCK: BOOLEAN
+ENDTYPE
+
+FUNCTION Sale(BYVAL Item : STRING, BYREF Quantity: INTEGER) RETURNS INTEGER
+
+    DECLARE Flag:BOOLEAN
+    Flag←FALSE
+    FOR index←1 TO INV_SIZE
+        IF inventory[index].NAME = Item THEN
+            Flag←TRUE
+            IF inventory[index].QUANTITY >= Quantity THEN
+                inventory[index].QUANTITY←inventory[index].QUANTITY-Quantity
+                sales[sales_index].NAME ← Item
+                sales[sales_index].QUANTITY ← Quantity
+                sales_index←sales_index+1
+                RETURN 0
+            ELSE
+                RETURN 1
+            ENDIF
+        ENDIF
+    NEXT index
+    IF Flag=FALSE THEN
+        RETURN 2
+    ENDIF
+
+ENDFUNCTION
+
+FUNCTION AddItem() RETURNS INTEGER
+    RETURN 0
+ENDFUNCTION
+
+FUNCTION RemoveItem() RETURNS INTEGER
+    RETURN 0
+ENDFUNCTION
+
+PROCEDURE SalesReport()
+    FOR index←1 TO sales_index-1
+        OUTPUT NUM_TO_STR(index) & " Sold " & NUM_TO_STR(sales[index].QUANTITY) & " many of " & sales[index].NAME
+    NEXT index
+ENDPROCEDURE
+
+PROCEDURE InventoryReport()
+    FOR index←1 TO INV_SIZE
+        CASE OF inventory[index].NAME
+            "NaN": OUTPUT ""
+            OTHERWISE: OUTPUT "There are " & NUM_TO_STR(inventory[index].QUANTITY) & " of " & inventory[index].NAME
+        ENDCASE
+    NEXT index
+ENDPROCEDURE
+
+//vibecoded function
+PROCEDURE InitialiseInventory()
+    DECLARE i : INTEGER
+    FOR i ← 1 TO INV_SIZE
+        inventory[i].NAME ← "Item" & NUM_TO_STR(i)
+        inventory[i].QUANTITY ← INT(RAND(500))
+        in_stock[i].NAME ← inventory[i].NAME
+        IF inventory[i].QUANTITY > 0 THEN
+            in_stock[i].STCK ← TRUE
+        ELSE
+            in_stock[i].STCK ← FALSE
+        ENDIF
+    NEXT i
+ENDPROCEDURE
+
+PROCEDURE main()
+    CALL InitialiseInventory()
+    
+    //sale test
+    DECLARE qnt,retrn:INTEGER
+    DECLARE item:STRING
+    item←"Item1"
+    qnt←20
+    retrn←Sale(item,qnt)
+    IF retrn = 0 THEN
+        OUTPUT "Successfull"
+    ENDIF
+    IF retrn = 1 THEN
+        OUTPUT "Not enough in stock of"&item
+    ENDIF
+    IF retrn = 2 THEN
+        OUTPUT item & "is not present in stock"
+    ENDIF
+    
+    //SalesReport test
+    CALL SalesReport()
+
+    //InventoryReport test
+    CALL InventoryReport()
+
+ENDPROCEDURE
+
+CALL main()
